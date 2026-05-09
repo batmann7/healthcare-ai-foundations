@@ -9,25 +9,24 @@ api_key = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=api_key)
 
 # 2. The callback function – this is the brain
-def symptom_checker(symptoms):
+def symptom_checker(symptoms, age):
     """
-    Takes user symptoms, sends them to Gemini with a safe medical prompt,
+    Takes user symptoms and age, sends them to Gemini with a safe medical prompt,
     and returns the AI's structured advice.
     """
     system_prompt = """
     You are a helpful and cautious medical triage assistant.
-    Based on the symptoms described, provide a structured response with:
-    1. Possible causes (list 2-3 common ones)
+    Based on the symptoms described and the patient's age, provide a structured response with:
+    1. Possible causes (list 2-3 common ones, considering the age)
     2. Recommended next steps (home care, pharmacy visit, or see a doctor)
     3. Urgency level (Low / Medium / High)
     4. A clear disclaimer: "I am an AI, not a doctor. Always consult a healthcare professional."
 
     Keep your tone calm and informative. Do NOT make a definitive diagnosis.
     """
+    full_prompt = f"{system_prompt}\n\nUser symptoms: {symptoms}\nPatient age: {age}"
 
-    full_prompt = f"{system_prompt}\n\nUser symptoms: {symptoms}"
-
-    # 3. Call Gemini
+    # Call Gemini
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=full_prompt
@@ -37,7 +36,10 @@ def symptom_checker(symptoms):
 # 4. Build the Gradio interface
 ui = gr.Interface(
     fn=symptom_checker, # the Python function to call
-    inputs=gr.Textbox(lines=4, placeholder="Describe your symptoms here..."),
+    inputs=[
+        gr.Textbox(lines=4, placeholder="Describe your symptoms here..."),
+        gr.Number(label="Age", minimum=0, maximum=120, value=30)
+    ],
     outputs=gr.Textbox(label="AI Triage Advice"),
     title="🏥 AI Symptom Checker",
     description="Describe your symptoms, and an AI assistant will provide general guidance. **This is not a medical diagnosis.**"
@@ -45,4 +47,4 @@ ui = gr.Interface(
 
 # 5. Launch the web app
 if __name__ == "__main__":
-    ui.launch()
+    ui.launch() 
